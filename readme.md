@@ -1,4 +1,6 @@
-# 2 Freq generator by DAC3-DMA triggered TIM6 or EXTI by HRTIM TimE Output. This DAC3 output is fed to ADC while HRTIM Master will trigger ADC by Regular and Injected conversion. When ADC Interrupt happens after conversion, data are send to DAC4.
+# From DAC-DMA to ADC to DAC out
+
+Different strategies from DAC-DMA to ADC to DAC out 
 
 Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM)[https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM] for the 2 Freq generator by DAC-DMA but will output the ADC data to DAC by ADC IT  
 
