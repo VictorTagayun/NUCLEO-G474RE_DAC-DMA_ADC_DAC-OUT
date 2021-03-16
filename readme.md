@@ -1,6 +1,6 @@
 # From DAC-DMA to ADC to DAC out
 
-Different strategies from DAC-DMA to ADC to DAC out 
+Different strategies for DAC-DMA to ADC to DAC out 
 
 Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM)[https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM] for the 2 Freq generator by DAC-DMA but will output the ADC data to DAC by ADC IT  
 
