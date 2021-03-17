@@ -1,4 +1,4 @@
-# 2 Freq generator by DAC-DMA with TIM6. HRTIM will trigger ADC by Regular conversion "ONLY". ADC will Interrupt after ADC conversion and output and also transfer data by DMA. DAC4 will show ADC by DMA. DAC2 will show data by ADC IT.
+# 2 Freq generator by DAC-DMA with TIM6. HRTIM will trigger ADC by Regular conversion "ONLY". ADC will Interrupt after ADC conversion and output and also transfer data by DMA. DAC4 will show ADC by DMA. DAC1 will show data by ADC IT.
 
 Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM)[https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TIM6_HRTIM] for the 2 Freq generator by DAC-DMA but will output the ADC data to DAC by IT  
 
@@ -6,7 +6,8 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 
 ### GPIO  
 
-* GPIOC8 is used for troubleshooting  
+* GPIOC11 is used for troubleshooting  
+* GPIOA5 is used for LED/Troubleshooting    
 
 ### TIM6 as 2MHz
 
@@ -22,7 +23,7 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 		Error_Handler();
 	}
 
-### DAC3 for 2 Freq generator using DMA  
+### DAC3 for 2 Freq generator using DMA by TIM6   
 
 * Set DAC High Freq. = 160MHz 
 * Trigger TIM6 Out Event
@@ -50,7 +51,7 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 		Error_Handler();
 	}
 
-### OpAmp6  
+### OpAmp6 Output from DAC3    
 
 * Mode = Follower DAC3 output1, input P
 * Power Mode = High Speed
@@ -63,23 +64,35 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 		Error_Handler();
 	}
 
-### Master HRTIM  
+### HRTIM TimE1, trigger ADC internally and DAC4 externally   
 
-* Setup Master HRTIM with 50% duty using CMP1  
-* ADC trigger1 on Master Period  
-* setup last in main.c  
+* Setup HRTIM TimE with 50% duty using CMP1  
+* ADC trigger1 on TimE Period  
+* Set Interleaved mode = Half
+* Set Active source = Period
+* Set Reset source = CMP1
+* Setup HRTIM Master and TimE in main.c 
 
-	if(HAL_OK != HAL_HRTIM_WaveformCounterStart(&hhrtim1, HRTIM_TIMERID_MASTER))
+	if(HAL_OK != HAL_HRTIM_WaveformOutputStart(&hhrtim1, HRTIM_OUTPUT_TE1))
 	{
 		Error_Handler();
 	}
-	
-### ADC  
+
+	if(HAL_OK != HAL_HRTIM_WaveformCounterStart(&hhrtim1, HRTIM_TIMERID_TIMER_E))
+	{
+		Error_Handler();
+	}
+		
+### ADC DMA to DAC4 DMA    
 
 * Setup 1 Regular Conversion mode   
-	* External trigger by HRTIM trig 1 event
-* Enable NVIC Global IT with Call HAL handler
-* Add callback for Regular Conversion mode  
+	* External trigger by HRTIM trig 1 event (TimE)  
+* Add DMA
+	* Mode Circular & Memory, data width Word
+* ADC_Settings
+	* DMA Continous Request = Enable
+* NVIC, enable DMA global IT with Call handler
+* Add callback for Regular Conversion mode, later will be used for DAC1 output
 
 	HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 	{
@@ -90,46 +103,36 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 				function HAL_ADC_ConvCpltCallback must be implemented in the user file.
 	   */
 
-		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_8);
+		HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_11);
 		adc_data = HAL_ADC_GetValue(hadc);
 		HAL_DAC_SetValue(&hdac4, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_data);
 	}
 
-* Enable ADC and IT  
+* Enable ADC and DMA    
 
-	/*##- Enable Regular Injection ADC Channel ##############################*/
-	if(HAL_OK != HAL_ADC_Start_IT(&hadc1))
+	/*##- Enable ADC Channel and associated DMA ##############################*/
+	if(HAL_OK != HAL_ADC_Start_DMA(&hadc1, &adc_dac_value, 1))
 	{
-		/* Start Error */
+		/* Start DMA Error */
 		Error_Handler();
 	}
 
-### DAC2 for ADC IT Data  
 
-* Enable DAC2  
-* Output buffer = Enable
-* DAC High Freq = Above 160MHz
-* Trigger by Software  
-* setup DAC4 in main.c  
-
-	/*##- Enable DAC Channel ##############################*/
-	if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
-	{
-		/* Start Error */
-		Error_Handler();
-	}
-
-### DAC4 for DMA   
+### DAC4 for DMA by EXTI   
 
 * Enable DAC4  
+* Click External Trigger
 * Set DAC High Freq. = 160MHz 
-* Trigger by Software  
+* Trigger by External Line 9   
+* NVIC 
+	* enable DMA global IT with Call handler 
+	* Disable EXT line IT
 * setup DAC4 in main.c  
 
-	/*##- Enable DAC Channel ##############################*/
-	if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
+	/*##- Enable ADC Channel and associated DMA ##############################*/
+	if(HAL_OK != HAL_ADC_Start_DMA(&hadc1, &adc_dac_value, 1))
 	{
-		/* Start Error */
+		/* Start DMA Error */
 		Error_Handler();
 	}
 	
@@ -146,6 +149,21 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 		Error_Handler();
 	}
 	
+### DAC1 for ADC IT Data  
+
+* Enable DAC2  
+* Output buffer = Enable
+* DAC High Freq = Above 160MHz
+* Trigger by Software  
+* setup DAC4 in main.c  
+
+	/*##- Enable DAC Channel ##############################*/
+	if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
+	{
+		/* Start Error */
+		Error_Handler();
+	}
+
 ### Troubleshooting
 
 * Case 1 = When TIM6 and DAC3 are enabled
