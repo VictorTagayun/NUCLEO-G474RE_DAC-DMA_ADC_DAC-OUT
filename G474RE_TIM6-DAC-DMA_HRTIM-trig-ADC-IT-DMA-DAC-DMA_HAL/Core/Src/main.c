@@ -145,12 +145,20 @@ int main(void)
   	Error_Handler();
   }
 
-  /*##- Enable DAC Channel ##############################*/
-  if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
-  {
-  	/* Start Error */
-  	Error_Handler();
-  }
+//  /*##- Enable DAC Channel ##############################*/
+//  if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
+//  {
+//  	/* Start Error */
+//  	Error_Handler();
+//  }
+
+	/*##- Enable DAC Channel and associated DMA ##############################*/
+	if(HAL_OK != HAL_DAC_Start_DMA(&hdac4, DAC_CHANNEL_1,
+								&adc_dac_value, 1, DAC_ALIGN_12B_R))
+	{
+		/* Start DMA Error */
+		Error_Handler();
+	}
 
   /*##- Start OPAMP    #####################################################*/
   /* Enable OPAMP */
@@ -190,6 +198,19 @@ int main(void)
 	if(HAL_OK != HAL_ADC_Start_DMA(&hadc1, &adc_dac_value, 1))
 	{
 		/* Start DMA Error */
+		Error_Handler();
+	}
+
+	/*##- Enable DAC Channel ##############################*/
+	if(HAL_OK != HAL_DAC_Start(&hdac1, DAC_CHANNEL_1))
+	{
+		/* Start Error */
+		Error_Handler();
+	}
+
+	if(HAL_OK != HAL_DAC_Start(&hdac2, DAC_CHANNEL_1))
+	{
+		/* Start Error */
 		Error_Handler();
 	}
 
@@ -364,7 +385,7 @@ static void MX_DAC1_Init(void)
   sConfig.DAC_DMADoubleDataMode = DISABLE;
   sConfig.DAC_SignedFormat = DISABLE;
   sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
-  sConfig.DAC_Trigger = DAC_TRIGGER_SOFTWARE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_Trigger2 = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_EXTERNAL;
@@ -409,7 +430,7 @@ static void MX_DAC2_Init(void)
   sConfig.DAC_DMADoubleDataMode = DISABLE;
   sConfig.DAC_SignedFormat = DISABLE;
   sConfig.DAC_SampleAndHold = DAC_SAMPLEANDHOLD_DISABLE;
-  sConfig.DAC_Trigger = DAC_TRIGGER_SOFTWARE;
+  sConfig.DAC_Trigger = DAC_TRIGGER_NONE;
   sConfig.DAC_Trigger2 = DAC_TRIGGER_NONE;
   sConfig.DAC_OutputBuffer = DAC_OUTPUTBUFFER_ENABLE;
   sConfig.DAC_ConnectOnChipPeripheral = DAC_CHIPCONNECT_EXTERNAL;
@@ -852,7 +873,7 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : PC9 */
   GPIO_InitStruct.Pin = GPIO_PIN_9;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
+  GPIO_InitStruct.Mode = GPIO_MODE_EVT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
@@ -878,8 +899,10 @@ HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
 
 //  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, SET);
   HAL_GPIO_TogglePin(GPIOC, GPIO_PIN_11);
-  adc_data = HAL_ADC_GetValue(hadc);
-  HAL_DAC_SetValue(&hdac4, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_data);
+  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_dac_value);
+  HAL_DAC_SetValue(&hdac2, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_dac_value);
+//  HAL_DAC_SetValue(&hdac1, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_data);
+//  HAL_DAC_SetValue(&hdac2, DAC_CHANNEL_1, DAC_ALIGN_12B_R, adc_data);
 }
 
 //HAL_ADCEx_InjectedConvCpltCallback(ADC_HandleTypeDef *hadc)

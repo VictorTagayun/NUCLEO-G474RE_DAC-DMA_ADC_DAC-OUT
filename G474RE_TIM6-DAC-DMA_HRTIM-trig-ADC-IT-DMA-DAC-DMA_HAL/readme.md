@@ -88,10 +88,12 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 * Setup 1 Regular Conversion mode   
 	* External trigger by HRTIM trig 1 event (TimE)  
 * Add DMA
-	* Mode Circular & Memory, data width Word
+	* Mode Circular @ Memory, data width Word
 * ADC_Settings
 	* DMA Continous Request = Enable
-* NVIC, enable DMA global IT with Call handler
+* NVIC, 
+	* Enable DMA global IT with Call handler
+	* Disable ADC1-2 Global IT
 * Add callback for Regular Conversion mode, later will be used for DAC1 output
 
 	HAL_ADC_ConvCpltCallback(ADC_HandleTypeDef *hadc)
@@ -127,10 +129,15 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 * NVIC 
 	* enable DMA global IT with Call handler 
 	* Disable EXT line IT
+* Add DMA
+	* Mode Circular @ Memory, data width Word
+* GPIO Setting (EXTI trigger)
+	* External Event/IT with Falling edge trigger detection
 * setup DAC4 in main.c  
 
-	/*##- Enable ADC Channel and associated DMA ##############################*/
-	if(HAL_OK != HAL_ADC_Start_DMA(&hadc1, &adc_dac_value, 1))
+	/*##- Enable DAC Channel and associated DMA ##############################*/
+	if(HAL_OK != HAL_DAC_Start_DMA(&hdac4, DAC_CHANNEL_1,
+								&adc_dac_value, 1, DAC_ALIGN_12B_R))
 	{
 		/* Start DMA Error */
 		Error_Handler();
@@ -149,16 +156,16 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 		Error_Handler();
 	}
 	
-### DAC1 for ADC IT Data  
+### DAC1 for ADC Data _HAL_ADC_ConvCpltCallback_ 
 
-* Enable DAC2  
+* Enable DAC1  
 * Output buffer = Enable
 * DAC High Freq = Above 160MHz
-* Trigger by Software  
-* setup DAC4 in main.c  
+* No Trigger by anything even Software
+* setup DAC1 in main.c  
 
 	/*##- Enable DAC Channel ##############################*/
-	if(HAL_OK != HAL_DAC_Start(&hdac4, DAC_CHANNEL_1))
+	if(HAL_OK != HAL_DAC_Start(&hdac1, DAC_CHANNEL_1))
 	{
 		/* Start Error */
 		Error_Handler();
@@ -166,13 +173,5 @@ Almost same as (https://github.com/VictorTagayun/NUCLEO-G474RE_DAC_DMA_LL-HAL_TI
 
 ### Troubleshooting
 
-* Case 1 = When TIM6 and DAC3 are enabled
-	* ADC not triggered, no Output on PC8
-* Case 2 = When TIM6 is disabled and DAC3 is enabled
-	* ADC triggered but no DAC3 output
-* Case 3 = When TIM6 is enabled and DAC3 is disabled
-	* ADC triggered but no DAC3 output
-	
-### Now OK!
+* DAC1-2 cannot output ADC data if triggered by software, etc.
 
-* Need to enable NVIC of DAC3 DMA with HAL Call handler
